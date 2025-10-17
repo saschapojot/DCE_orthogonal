@@ -31,20 +31,40 @@ y2_in_exp=g0*sqrt(2/beta)*rho*(-I*half*lmd*sin(theta)-half*omegap)/D*exp(I*omega
     +g0*sqrt(2/beta)*rho*(I*half*lmd*sin(theta)-half*omegap)/D*exp(-I*omegap*tau)\
     +(s2+g0*sqrt(2/beta)*rho*omegap/D)*exp(-lmd*sin(theta)*tau)
 
-c0_in_y2_solution=-I*g0*sqrt(2*beta)*rho*y2_in_exp*cos(omegap*tau)
+c0_in_y2_solution=-I*g0*sqrt(2*beta)*rho*y2_solution*cos(omegap*tau)
 
 
+c0_integral=I*g0**2/D*omegap*rho**2*tau\
+    +I*g0**2/(2*D)*rho**2*(lmd*sin(theta)/omegap*cos(2*omegap*tau)+sin(2*omegap*tau))\
+    -I*g0/D*sqrt(2*beta)*rho*(s2+g0/D*sqrt(2/beta)*omegap*rho)*exp(-lmd*sin(theta)*tau)\
+    *(omegap*sin(omegap*tau)-lmd*sin(theta)*cos(omegap*tau))
 
-c0_explicit=I*g0**2/D*omegap*rho**2\
-    +g0**2/D*(-half*lmd*sin(theta)+I*half*omegap)*rho**2*exp(2*I*omegap*tau)\
-    +g0**2/D*(half*lmd*sin(theta)+I*half*omegap)*rho**2*exp(-2*I*omegap*tau)\
-    -I*half*g0*sqrt(2*beta)*rho*(s2+g0*sqrt(2/beta)*rho*omegap/D)*exp((-lmd*sin(theta)+I*omegap)*tau)\
-    -I*half*g0*sqrt(2*beta)*rho*(s2+g0/D*sqrt(2/beta)*omegap*rho)*exp((-lmd*sin(theta)-I*omegap)*tau)
+c0_int_tau0=I*g0/D*sqrt(2*beta)*lmd*sin(theta)*rho*s2\
+    +I*g0**2*lmd*sin(theta)*(D+4*omegap**2)/(2*omegap*D**2)*rho**2
+
+s2_in_y2=y2*exp(lmd*sin(theta)*tau)-g0*sqrt(2/beta)*lmd*sin(theta)/D*rho*exp(lmd*sin(theta)*tau)*sin(omegap*tau)\
+    +g0*sqrt(2/beta)*omegap/D*rho*cos(omegap*tau)*exp(lmd*sin(theta)*tau)\
+    -g0*sqrt(2/beta)*omegap/D*rho
+
+G_lhs=c0_integral-c0_int_tau0.subs([(s2,s2_in_y2)])
 
 
-rst=c0_in_y2_solution-c0_explicit
+F0=-I*g0**2/(2*omegap*D)*lmd*sin(theta)*rho**2-I*g0/D*sqrt(2*beta)*lmd*sin(theta)*rho
+
+F1=I*g0**2/D*omegap*rho**2
+
+F2=-I*g0/D*omegap*sqrt(2*beta)*rho*y2
+
+F3=I*g0/D*lmd*sin(theta)*sqrt(2*beta)*rho*y2
+
+F4=-I*g0**2/(2*D)*rho**2
+
+F5=I*g0**2/(2*D)*lmd*sin(theta)/omegap*rho**2
+
+G=F0+F1*tau+F2*sin(omegap*tau)+F3*cos(omegap*tau)+F4*sin(2*omegap*tau)+F5*cos(2*omegap*tau)
+
+rst=G-G_lhs
 
 tmp=TR5(TR11(expand_complex(rst)))
-
 
 pprint(simplify(expand(tmp)))
