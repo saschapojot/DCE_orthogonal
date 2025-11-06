@@ -46,8 +46,18 @@ s2_in_y2=y2*exp(lmd*sin(theta)*tau)-g0*sqrt(2/beta)*lmd*sin(theta)/D*rho*exp(lmd
     +g0*sqrt(2/beta)*omegap/D*rho*cos(omegap*tau)*exp(lmd*sin(theta)*tau)\
     -g0*sqrt(2/beta)*omegap/D*rho
 
-G_lhs=c0_integral-c0_int_tau0.subs([(s2,s2_in_y2)])
+G_lhs=I*g0**2/D*omegap*rho**2*tau\
+    +I*g0**2/(2*D)*lmd*sin(theta)/omegap*rho**2*cos(2*omegap*tau)\
+    +I*g0**2/(2*D)*rho**2*sin(2*omegap*tau)\
+    -I*g0/D*omegap*rho*(sqrt(2*beta)*s2+2*g0/D*omegap*rho)*exp(-lmd*sin(theta)*tau)*sin(omegap*tau)\
+    +I*g0/D*lmd*sin(theta)*rho*(sqrt(2*beta)*s2+2*g0/D*omegap*rho)*exp(-lmd*sin(theta)*tau)*cos(omegap*tau)\
+    -I*g0/D*sqrt(2*beta)*lmd*sin(theta)*rho*s2\
+    -I*g0**2*lmd*sin(theta)*(D+4*omegap**2)/(2*omegap*D**2)*rho**2
 
+
+
+
+# G_lhs_in_y2=G_lhs.subs([(s2,s2_in_y2)])
 
 F0=-I*g0**2/(2*omegap*D)*lmd*sin(theta)*rho**2-I*g0/D*sqrt(2*beta)*lmd*sin(theta)*rho
 
@@ -63,8 +73,18 @@ F5=I*g0**2/(2*D)*lmd*sin(theta)/omegap*rho**2
 
 G=F0+F1*tau+F2*sin(omegap*tau)+F3*cos(omegap*tau)+F4*sin(2*omegap*tau)+F5*cos(2*omegap*tau)
 
-rst=G-G_lhs
 
-tmp=TR5(TR11(expand_complex(rst)))
+F11=half*lmd*sin(theta)+F1
 
-pprint(simplify(expand(tmp)))
+G1=F0+F11*tau+F2*sin(omegap*tau)+F3*cos(omegap*tau)+F4*sin(2*omegap*tau)+F5*cos(2*omegap*tau)
+
+lhs=I*diff(G1,tau)
+dy2G1=diff(G1,y2)
+rhs=g0*sqrt(2*beta)*rho*y2*cos(omegap*tau)-I*g0*sqrt(2/beta)*rho*sin(omegap*tau)*dy2G1\
+    +half*I*lmd*sin(theta)+I*lmd*sin(theta)*y2*dy2G1
+
+tmp=lhs-rhs
+
+rst=TR5(TR11(tmp))
+
+pprint(simplify(expand(rst)))
