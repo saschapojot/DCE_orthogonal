@@ -6,6 +6,7 @@
 #define EVOLUTION_HPP
 #include <armadillo>
 #include <boost/filesystem.hpp>
+#include <boost/math/special_functions/hermite.hpp>
 #include <boost/python.hpp>
 #include <boost/python/numpy.hpp>
 #include <cmath>
@@ -237,6 +238,17 @@ public:
     }//end constructor
 public:
     ///
+    /// @param n order of Hermite function
+    /// @param x variable
+    /// @param omega frequency
+    /// @return Hermite function (normalized)
+    double harmonic_oscillator_wavefunction(int n, double x, double omega);
+    ///
+    /// @param n order
+    /// @param x variable
+    /// @return hermite polynomial value h_n(x)
+    double hermite_polynomial(int n, double x) ;
+    ///
     /// @param x1 variable for photon harmonic oscillator
     /// @param tau time step
     /// @return auxiliary function Delta for computing tensor Z
@@ -249,6 +261,9 @@ public:
     /// @param tau time step
     /// @return auxiliary function alpha for computing tensor Z
     double alpha(double tau);
+
+    ///for testing
+    void print_anything();
 public:
     int j1H;
     int j2H;
