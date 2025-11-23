@@ -337,7 +337,7 @@ params = {
 
 
 # Time parameter
-tau = mp.mpf('2')  # Very small time
+tau = mp.mpf('0.1')  # Very small time
 
 j=1
 k=1
@@ -346,8 +346,10 @@ n2=1
 x1_max=7
 y2_max=15
 max_deg=25
-
-rst1=compute_double_integral_numerical(j,k,n1,n2,tau,params,x1_max,y2_max,max_deg)
-rst2=integral_using_feldheim(j,k,n1,n2,tau,params,x1_max,y2_max,max_deg)
-rst3=Z_tilde_func(j,k,n1,n2,tau,params)
-print(f"rst1={rst1}, rst2={rst2}, rst3={rst3}")
+x1=0.1
+val=I_kn2_at_x1_func(k, n2, x1, tau, params, x1_max, y2_max, maxdegree=25)
+print(val)
+# rst1=compute_double_integral_numerical(j,k,n1,n2,tau,params,x1_max,y2_max,max_deg)
+# rst2=integral_using_feldheim(j,k,n1,n2,tau,params,x1_max,y2_max,max_deg)
+# rst3=Z_tilde_func(j,k,n1,n2,tau,params)
+# print(f"rst1={rst1}, rst2={rst2}, rst3={rst3}")
