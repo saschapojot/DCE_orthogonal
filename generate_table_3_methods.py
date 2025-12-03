@@ -625,8 +625,8 @@ def compute_all_integrals_adaptive(tau, params, N1, N2, maxdegree=25,
 
     if x1_bounds:
         print(f"\nIntegration bounds statistics:")
-        print(f"  x1_max: min={min(x1_bounds):.2f}, max={max(x1_bounds):.2f}, mean={np.mean(x1_bounds):.2f}")
-        print(f"  y2_max: min={min(y2_bounds):.2f}, max={max(y2_bounds):.2f}, mean={np.mean(y2_bounds):.2f}")
+    print(f"  x1_max: min={float(min(x1_bounds)):.2f}, max={float(max(x1_bounds)):.2f}, mean={np.mean([float(x) for x in x1_bounds]):.2f}")
+    print(f"  y2_max: min={float(min(y2_bounds)):.2f}, max={float(max(y2_bounds)):.2f}, mean={np.mean([float(x) for x in y2_bounds]):.2f}")
 
     if method1_times:
         print(f"\nTiming statistics per method (non-zero integrals only):")
