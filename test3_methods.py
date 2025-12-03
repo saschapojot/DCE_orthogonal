@@ -39,6 +39,24 @@ def rho_func(x1,params):
     val=omega_c*x1**2-mp.mpf("0.5")
     return val
 
+def delta_func(tau,params):
+    beta = params['beta']
+    D = params['D']
+    omega_p = params['omega_p']
+    lmd = params['lmd']
+    theta = params['theta']
+    g0 = params['g0']
+    alpha_val=alpha_func(tau,params)
+
+    part0=-g0*mp.sqrt(2/beta)*lmd*mp.sin(theta)/D*alpha_val*mp.sin(omega_p*tau)
+
+    part1=g0*mp.sqrt(2/beta)*omega_p/D*alpha_val*mp.cos(omega_p*tau)
+
+    part2=-g0*mp.sqrt(2/beta)*omega_p/D
+
+    return part0+part1+part2
+
+
 def Delta_func(x1,tau,params):
     """Compute Delta(x1, tau) from equation (150)"""
 
@@ -53,14 +71,9 @@ def Delta_func(x1,tau,params):
     two=mp.mpf("2")
     rho_val=rho_func(x1,params)
 
-    part1=-g0*mp.sqrt(two/beta)*lmd*mp.sin(theta)/D*rho_val*alpha_val\
-         *mp.sin(omega_p*tau)
-    part2=g0*mp.sqrt(two/beta)*omega_p/D*rho_val*alpha_val\
-          *mp.cos(omega_p*tau)
+    delta_val=delta_func(tau,params)
 
-    part3=-g0*mp.sqrt(two/beta)*omega_p/D*rho_val
-
-    val=part1+part2+part3
+    val=rho_val*delta_val
     return val
 
 
@@ -176,22 +189,7 @@ def integral_using_feldheim(j,k,n1,n2,tau,params,x1_max, y2_max, maxdegree=25):
     result = mp.quad(integrand_x1, [-x1_max, x1_max], maxdegree=maxdegree)
     return result
 
-def delta_func(tau,params):
-    omega_c = params['omega_c']
-    Omega = params['Omega']
-    lmd = params['lmd']
-    theta = params['theta']
-    beta = params['beta']
-    D = params['D']
-    omega_p = params['omega_p']
-    g0 = params['g0']
-    alpha_val=alpha_func(tau, params)
-    part1=-g0*mp.sqrt(2/beta)*lmd*mp.sin(theta)/D*alpha_val*mp.sin(omega_p*tau)
-    part2=g0*mp.sqrt(2/beta)*omega_p/D*alpha_val*mp.cos(omega_p*tau)
-    part3=-g0*mp.sqrt(2/beta)*omega_p/D
 
-    val=part1+part2+part3
-    return val
 
 
 
@@ -209,8 +207,7 @@ def Z_tilde_func(j,k,n1,n2,tau,params):
     # Check parity constraints
     if (j % 2) != (n1 % 2):
         return mp.mpf(0)
-    if (k % 2) != (n2 % 2):
-        return mp.mpf(0)
+
 
     omega_c = params['omega_c']
     Omega = params['Omega']
@@ -232,7 +229,7 @@ def Z_tilde_func(j,k,n1,n2,tau,params):
     exp_sum_part2=-one_over_8*Omega*delta_val**2/(1+alpha_val**2)
     exp_sum=exp_sum_part1+exp_sum_part2
     exp_part=mp.exp(exp_sum)
-    print(f"exp_part={exp_part}")
+    # print(f"exp_part={exp_part}")
 
 
     # Common terms
@@ -285,18 +282,18 @@ def Z_tilde_func(j,k,n1,n2,tau,params):
                                      mp.power(2, power_2) *
                                      mp.power(alpha_val, power_alpha) *
                                      sign)
-                            power_x = j - 2*m1 + n1 - 2*m2 + k - 2*R - 2*m3 + n2 - 2*m4 + 2*t
+                            power_x = j - 2*m1 + n1 - 2*m2  + 2*t
                             pow_val=(power_x+1)/mp.mpf(2)
                             pow_term=(mp.sqrt((1+alpha_val**2)/Omega)*1/(mp.fabs(delta_val)*omega_c))**pow_val
 
                             a_param = power_x / mp.mpf(2)
-                            z_param = -mp.sqrt((1+alpha_val**2**2)/Omega) \
+                            z_param = -mp.sqrt((1+alpha_val**2)/Omega) \
                                       *(one_over_2*Omega*delta_val**2/(1+alpha_val**2)-1)*1/np.abs(delta_val)
                             U_term=mp.pcfu(a_param, z_param)
                             gm_val=mp.gamma((power_x+1) / mp.mpf(2))
                             prod_val=coeff*pow_term*gm_val*U_term
                             sum_total+=prod_val
-    print(f"sum_total={sum_total}")
+    # print(f"sum_total={sum_total}")
     sum_total*=exp_part
 
     return sum_total
@@ -339,17 +336,19 @@ params = {
 # Time parameter
 tau = mp.mpf('0.1')  # Very small time
 
-j=1
+j=2
 k=1
-n1=1
+n1=2
 n2=1
 x1_max=7
 y2_max=15
 max_deg=25
 x1=0.1
-val=I_kn2_at_x1_func(k, n2, x1, tau, params, x1_max, y2_max, maxdegree=25)
-print(val)
-# rst1=compute_double_integral_numerical(j,k,n1,n2,tau,params,x1_max,y2_max,max_deg)
-# rst2=integral_using_feldheim(j,k,n1,n2,tau,params,x1_max,y2_max,max_deg)
-# rst3=Z_tilde_func(j,k,n1,n2,tau,params)
-# print(f"rst1={rst1}, rst2={rst2}, rst3={rst3}")
+
+
+# val=I_kn2_at_x1_func(k, n2, x1, tau, params, x1_max, y2_max, maxdegree=25)
+# print(val)
+rst1=compute_double_integral_numerical(j,k,n1,n2,tau,params,x1_max,y2_max,max_deg)
+rst2=integral_using_feldheim(j,k,n1,n2,tau,params,x1_max,y2_max,max_deg)
+rst3=Z_tilde_func(j,k,n1,n2,tau,params)
+print(f"rst1={rst1}, rst2={rst2}, rst3={rst3}")
