@@ -391,7 +391,9 @@ def estimate_integration_bounds(j, k, n1, n2, params, tau, safety_factor=3.0):
     y2_max_base = float(y2_classical * safety_factor)
     # Add buffer for the transformation
     y2_max = y2_max_base * float(alpha_val) + Delta_max + y2_max_base
-
+    # --- ADD THESE LINES HERE ---
+    x1_max += 15.0
+    y2_max += 15.0
     return x1_max, y2_max
 
 def adaptive_compute_integral(j, k, n1, n2, tau, params, method='method3',
