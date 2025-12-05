@@ -4,6 +4,8 @@ project(DCE_quasilinear)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CXX_STANDARD_LIB "/usr/lib/x86_64-linux-gnu/libstdc++.so.6")
+
+######################## run_evolution part
 add_executable(run_evolution run_evolution.cpp evolution/evolution.cpp evolution/evolution.hpp)
 #add_executable(example fftw_example.cpp)
 target_compile_options(run_evolution PRIVATE
@@ -102,4 +104,25 @@ target_link_libraries(run_evolution ${LIBS_SO})
 #file(GLOB LIBS_A "/home/adada/cppLocal/fftw3/lib/*.a")
 
 #target_link_libraries(example ${LIBS_A})
+########################end run_evolution part
+add_executable(run_integral_table run_integral_table.cpp compute_integral_table/integral_table.cpp compute_integral_table/integral_table.hpp)
 
+target_compile_options(run_integral_table PRIVATE
+        $<$<CONFIG:Release>:-O3>
+        $<$<CONFIG:Release>:-march=native>
+        $<$<CONFIG:Release>:-ftree-vectorize>
+)
+
+set_source_files_properties(
+        compute_integral_table/integral_table.cpp
+        PROPERTIES
+        COMPILE_OPTIONS "-O3"
+)
+
+target_link_libraries(run_integral_table Boost::filesystem)
+
+target_link_libraries(run_integral_table Boost::python)
+target_link_libraries(run_integral_table Boost::numpy)
+#python
+target_link_libraries(run_integral_table ${Python3_LIBRARIES})
+target_link_libraries(run_integral_table  Boost::boost)
