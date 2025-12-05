@@ -336,12 +336,12 @@ params = {
 # Time parameter
 tau = mp.mpf('0.1')  # Very small time
 
-j=2
+j=0
 k=1
-n1=2
+n1=0
 n2=1
-x1_max=7
-y2_max=15
+x1_max=10
+y2_max=25
 max_deg=25
 x1=0.1
 
@@ -352,3 +352,9 @@ rst1=compute_double_integral_numerical(j,k,n1,n2,tau,params,x1_max,y2_max,max_de
 rst2=integral_using_feldheim(j,k,n1,n2,tau,params,x1_max,y2_max,max_deg)
 rst3=Z_tilde_func(j,k,n1,n2,tau,params)
 print(f"rst1={rst1}, rst2={rst2}, rst3={rst3}")
+
+# t_start=datetime.now()
+# rst3=Z_tilde_func(j,k,n1,n2,tau,params)
+# print(f"rst3={rst3}")
+# t_end=datetime.now()
+# print(f"time: {t_end-t_start}")
