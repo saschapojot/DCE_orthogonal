@@ -176,9 +176,9 @@ def compute_double_integral_numerical(j,k,n1,n2, tau, params, x1_max, y2_max, ma
 
 
 
-    result = mp.quad(lambda x1:mp.quad(lambda y2: full_integrand(x1,y2,j,k,n1,n2, tau,params),[-y2_max,y2_max],maxdegree=maxdegree),
+    result = mp.quad(lambda x1:mp.quad(lambda y2: full_integrand(x1,y2,j,k,n1,n2, tau,params),[-y2_max,y2_max],maxdegree=maxdegree,points=[0]),
                      [-x1_max, x1_max],
-                     maxdegree=maxdegree)
+                     maxdegree=maxdegree,points=[0])
     return result
 
 
@@ -251,7 +251,7 @@ def integral_using_feldheim(j,k,n1,n2,tau,params,x1_max, y2_max, maxdegree=25):
         psi_c_n1 = psi_c(n1, x1, params['omega_c'])
         return psi_c_j * psi_c_n1 * I_kn2
 
-    result = mp.quad(integrand_x1, [-x1_max, x1_max], maxdegree=maxdegree)
+    result = mp.quad(integrand_x1, [-x1_max, x1_max], maxdegree=maxdegree,points=[0])
     return result
 
 
@@ -392,8 +392,8 @@ def estimate_integration_bounds(j, k, n1, n2, params, tau, safety_factor=3.0):
     # Add buffer for the transformation
     y2_max = y2_max_base * float(alpha_val) + Delta_max + y2_max_base
     # --- ADD THESE LINES HERE ---
-    x1_max += 15.0
-    y2_max += 15.0
+    x1_max += 2.0
+    y2_max += 2.0
     return x1_max, y2_max
 
 def adaptive_compute_integral(j, k, n1, n2, tau, params, method='method3',
