@@ -288,7 +288,7 @@ def Z_tilde_func(j,k,n1,n2,tau,params):
 
                             a_param = power_x / mp.mpf(2)
                             z_param = -mp.sqrt((1+alpha_val**2)/Omega) \
-                                      *(one_over_2*Omega*delta_val**2/(1+alpha_val**2)-1)*1/np.abs(delta_val)
+                                      *(one_over_2*Omega*delta_val**2/(1+alpha_val**2)-1)*1/mp.fabs(delta_val)
                             U_term=mp.pcfu(a_param, z_param)
                             gm_val=mp.gamma((power_x+1) / mp.mpf(2))
                             prod_val=coeff*pow_term*gm_val*U_term
