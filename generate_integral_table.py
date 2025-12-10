@@ -2,11 +2,13 @@ import mpmath as mp
 import pandas as pd
 from pathlib import Path
 import sys
-
+from multiprocessing import Pool
+import itertools
+from datetime import datetime
 #this script computes integral table using mpmath
 
 
-mp.mp.dps=25
+mp.mp.dps=30
 #python readCSV.py groupNum rowNum
 #this script reads csv and creates directory
 if len(sys.argv)!=3:
@@ -17,7 +19,7 @@ rowNum=int(sys.argv[2])
 
 #read parameters from csv
 inParamFileName="./inParams/inParams"+str(groupNum)+".csv"
-# print("file name is "+inParamFileName)
+print("file name is "+inParamFileName)
 dfstr=pd.read_csv(inParamFileName)
 oneRow=dfstr.iloc[rowNum,:]
 j1H=int(oneRow.loc["j1H"])
@@ -29,24 +31,23 @@ omega_c = mp.mpf(oneRow.loc["omegac"])
 er = mp.mpf(oneRow.loc["er"])
 thetaCoef = mp.mpf(oneRow.loc["thetaCoef"])
 theta = thetaCoef * mp.pi
-
+#
 N1 = int(oneRow.loc["N1"])
 N2 = int(oneRow.loc["N2"])
 tTot = mp.mpf(oneRow.loc["tTot"])
 Q = int(oneRow.loc["Q"])
-print("j1H="+str(j1H)+", j2H="+str(j2H)+", g0="+str(g0) \
-      +", omega_m="+str(omega_m)+", omega_p="+str(omega_p) \
-      +", omega_c="+str(omega_c)+", er="+str(er)+", thetaCoef="+str(thetaCoef)+f", N1={N1}, N2={N2}, tTot={tTot}, Q={Q}")
-#derived quantities
-#1. Delta_m
+
+# derived quantities
+# 1. Delta_m
 Delta_m = omega_m - omega_p
 
 #2. r
 r=mp.log(er)
 #3. e^{2r}
 e2r=er**2
-#4. dt
+# #4. dt
 dt=tTot/mp.mpf(Q)
+tau=dt
 #5.
 lmd=(e2r-1.0/e2r)/(e2r+1.0/e2r)*Delta_m
 
@@ -58,10 +59,13 @@ mu=lmd*mp.cos(theta)+Delta_m
 beta=Delta_m-lmd*mp.cos(theta)
 #9. Omega
 Omega=mp.sqrt(beta*mu)
+print("j1H="+str(j1H)+", j2H="+str(j2H)+", g0="+str(g0) \
+      +", omega_m="+str(omega_m)+", omega_p="+str(omega_p) \
+      +", omega_c="+str(omega_c)+", er="+str(er)+", thetaCoef="+str(thetaCoef)+f", N1={N1}, N2={N2}, tTot={tTot}, Q={Q}, tau={tau}")
 print("\n" + "="*80)
 print(f"{'DERIVED QUANTITY':<12}")
 print("-" * 80)
-# Derived Quantities
+##Derived Quantities
 print(f"{'theta':<12} | {theta}")
 print(f"{'Delta_m':<12} | {Delta_m}")
 print(f"{'r':<12} | {r}")
@@ -117,15 +121,7 @@ def delta_func(tau,params):
 def Delta_func(x1,tau,params):
     """Compute Delta(x1, tau) from equation (150)"""
 
-    beta = params['beta']
-    D = params['D']
-    omega_p = params['omega_p']
-    lmd = params['lmd']
-    theta = params['theta']
-    g0 = params['g0']
 
-    alpha_val=alpha_func(tau,params)
-    two=mp.mpf("2")
     rho_val=rho_func(x1,params)
 
     delta_val=delta_func(tau,params)
@@ -153,10 +149,10 @@ def Z_tilde_summation_one_term(j,k,n1,n2,R,m1,m2,m3,m4,t,tau,params):
     alpha_val=alpha_func(tau, params)
     delta_val=delta_func(tau,params)
 
-    pow_omega_c=(j-2*m1+n1-2*m2+1)*half+t
+    pow_omega_c=(j - 2*m1 + n1 - 2*m2 + mp.mpf(1))/ mp.mpf(2)  + t
     part1=mp.power(omega_c,pow_omega_c)
 
-    pow_Omega=(k+n2-2*R-2*m3-2*m4)*half
+    pow_Omega=(k + n2 - 2*R - 2*m3 - 2*m4) / mp.mpf(2)
     part2=mp.power(Omega,pow_Omega)
 
     pow_delta = k + n2 - 2*R - 2*m3 - 2*m4
@@ -203,11 +199,112 @@ def Z_tilde_summation_one_term(j,k,n1,n2,R,m1,m2,m3,m4,t,tau,params):
               *(one_over_2*Omega*delta_val**2/(1+alpha_val**2)-1)*1/mp.fabs(delta_val)
     part12=mp.pcfu(a_param, z_param)
 
+    power_2 = 2*R + mp.mpf(0.5)*j - 2*m1 + mp.mpf(0.5)*n1 - 2*m2 + t - mp.mpf(0.5)*k - mp.mpf(0.5)*n2 + mp.mpf(0.5)
+    part13=mp.power(2, power_2)
+
     val=part1*part2*part3*part4\
         *part5*part6*part7*part8\
-        *part9*part10*part11*part12
+        *part9*part10*part11*part12\
+        *part13
 
     return val
 
+def one_Z_tilde_sequential(j,k,n1,n2,tau,params):
+    # Check parity constraints
+    if (j % 2) != (n1 % 2):
+        return mp.mpf(0)
+    sum_total = mp.mpf(0)
+    # Loop over R, m1, m2, m3, m4, t as in eq (200)
+    min_k_n2 = min(k, n2)
+    for R in range(0,min_k_n2 + 1):
+
+        for m1 in range(0,j // 2 + 1):
+            for m2 in range(0,n1 // 2 + 1):
+                for m3 in range(0,(k - R) // 2 + 1):
+                    for m4 in range(0,(n2 - R) // 2 + 1):
+                        t_max = k + n2 - 2*R - 2*m3 - 2*m4
+                        for t in range(0,t_max + 1):
+                            sum_total+=Z_tilde_summation_one_term(j,k,n1,n2,R,m1,m2,m3,m4,t,tau,params)
 
 
+    return sum_total
+
+def Z_tilde_summation_packed_params(packed_args):
+    j,k,n1,n2,tau,params=packed_args
+    Z_tilde_val=one_Z_tilde_sequential(j,k,n1,n2,tau,params)
+    return (j,k,n1,n2,Z_tilde_val)
+
+
+
+
+# Physical parameters
+# omega_c = mp.mpf('1.5')
+# omega_m = mp.mpf('1.1')
+# omega_p = mp.mpf('0.8')
+# Delta_m = omega_m - omega_p
+# theta = mp.mpf('0.1')  # radians
+# g0 = mp.mpf('0.2')  # Small coupling
+# Derived parameters
+# lmd=mp.mpf(0.9)*Delta_m
+#
+# mu = lmd * mp.cos(theta) + Delta_m
+# beta = Delta_m - lmd * mp.cos(theta)
+# Omega = mp.sqrt(beta * mu)
+# D = lmd**2 * mp.sin(theta)**2 + omega_p**2
+# params = {
+#     'omega_c': omega_c,
+#     'omega_m': omega_m,
+#     'omega_p': omega_p,
+#     'Delta_m': Delta_m,
+#     'lmd': lmd,
+#     'theta': theta,
+#     'g0': g0,
+#     'mu': mu,
+#     'beta': beta,
+#     'Omega': Omega,
+#     'D': D
+# }
+#
+
+# Time parameter
+# tau = mp.mpf('0.1')  # Very small time
+
+# j=2
+# k=3
+# n1=2
+# n2=3
+# one_list=[j,k,n1,n2,tau,params]
+# param_list,val=Z_tilde_summation_packed_params(one_list)
+# print(f"val={val}")
+# Create an iterator (uses almost 0 memory)
+t_table_start=datetime.now()
+param_generator = (
+    [j, k, n1, n2, tau, params]
+    for j in range(0, N1)
+    for k in range(0, N2)
+    for n1 in range(0, N1)
+    for n2 in range(0, N2)
+)
+results_list = []
+with Pool() as pool:
+    # Use imap for memory efficiency
+    # chunksize is crucial for speed if N1/N2 are large
+    iterator = pool.imap(Z_tilde_summation_packed_params, param_generator, chunksize=1000)
+    # Collect results
+    for row in iterator:
+        results_list.append(row)
+
+# 2. Create the Table
+df = pd.DataFrame(results_list, columns=['j', 'k', 'n1', 'n2', 'Z_tilde'])
+print(df.head())
+
+t_table_end=datetime.now()
+
+print(f"time: {t_table_end-t_table_start}")
+
+outDir="./outData/group"+str(groupNum)+"/row"+str(rowNum)+"/"
+
+Path(outDir).mkdir(exist_ok=True,parents=True)
+out_csv_name=outDir+f"table_N1_{N1}_N2_{N2}.csv"
+df.to_csv(out_csv_name, index=False)
+print(f"File saved successfully to: {out_csv_name}")

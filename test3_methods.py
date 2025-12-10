@@ -1,9 +1,10 @@
 import mpmath as mp
 import numpy as np
 from datetime import datetime
-
+import sys
+import pandas as pd
 # Set high precision for mpmath
-mp.dps = 30  # decimal places
+mp.mp.dps=30
 
 def hermite_poly(n, x):
     """Compute Hermite polynomial H_n(x) using mpmath"""
@@ -86,6 +87,7 @@ def full_integrand(x1,y2,j,k,n1,n2,tau,params):
     Omega = params['Omega']
     lmd = params['lmd']
     theta = params['theta']
+    omega_c=params['omega_c']
     alpha_val=alpha_func(tau,params)
     Delta_val=Delta_func(x1,tau,params)
 
@@ -291,10 +293,10 @@ def Z_tilde_func(j,k,n1,n2,tau,params):
                                       *(one_over_2*Omega*delta_val**2/(1+alpha_val**2)-1)*1/mp.fabs(delta_val)
                             U_term=mp.pcfu(a_param, z_param)
                             gm_val=mp.gamma((power_x+1) / mp.mpf(2))
-                            prod_val=coeff*pow_term*gm_val*U_term
+                            prod_val=coeff*pow_term*gm_val*U_term*exp_part
                             sum_total+=prod_val
     # print(f"sum_total={sum_total}")
-    sum_total*=exp_part
+    # sum_total*=exp_part
 
     return sum_total
 
@@ -305,19 +307,101 @@ def Z_tilde_func(j,k,n1,n2,tau,params):
 
 
 # Physical parameters
-omega_c = mp.mpf('1.5')
-omega_m = mp.mpf('1.1')
-omega_p = mp.mpf('0.8')
-Delta_m = omega_m - omega_p
-theta = mp.mpf('0.1')  # radians
-g0 = mp.mpf('0.2')  # Small coupling
-# Derived parameters
-lmd=0.9*Delta_m
+# omega_c = mp.mpf('1.5')
+# omega_m = mp.mpf('1.1')
+# omega_p = mp.mpf('0.8')
+# Delta_m = omega_m - omega_p
+# theta = mp.mpf('0.1')  # radians
+# g0 = mp.mpf('0.2')  # Small coupling
+# # Derived parameters
+# lmd=mp.mpf(0.9)*Delta_m
 
-mu = lmd * mp.cos(theta) + Delta_m
-beta = Delta_m - lmd * mp.cos(theta)
-Omega = mp.sqrt(beta * mu)
-D = lmd**2 * mp.sin(theta)**2 + omega_p**2
+# mu = lmd * mp.cos(theta) + Delta_m
+# beta = Delta_m - lmd * mp.cos(theta)
+# Omega = mp.sqrt(beta * mu)
+# D = lmd**2 * mp.sin(theta)**2 + omega_p**2
+# params = {
+#     'omega_c': omega_c,
+#     'omega_m': omega_m,
+#     'omega_p': omega_p,
+#     'Delta_m': Delta_m,
+#     'lmd': lmd,
+#     'theta': theta,
+#     'g0': g0,
+#     'mu': mu,
+#     'beta': beta,
+#     'Omega': Omega,
+#     'D': D
+# }
+
+
+# Time parameter
+# tau = mp.mpf('0.1')  # Very small time
+
+
+#######################read from csv
+groupNum=int(sys.argv[1])
+rowNum=int(sys.argv[2])
+inParamFileName="./inParams/inParams"+str(groupNum)+".csv"
+print("file name is "+inParamFileName)
+dfstr=pd.read_csv(inParamFileName)
+oneRow=dfstr.iloc[rowNum,:]
+j1H=int(oneRow.loc["j1H"])
+j2H=int(oneRow.loc["j2H"])
+g0 = mp.mpf(oneRow.loc["g0"])
+omega_m = mp.mpf(oneRow.loc["omegam"])  # Now reads full precision string into mpmath
+omega_p = mp.mpf(oneRow.loc["omegap"])
+omega_c = mp.mpf(oneRow.loc["omegac"])
+er = mp.mpf(oneRow.loc["er"])
+thetaCoef = mp.mpf(oneRow.loc["thetaCoef"])
+theta = thetaCoef * mp.pi
+#
+N1 = int(oneRow.loc["N1"])
+N2 = int(oneRow.loc["N2"])
+tTot = mp.mpf(oneRow.loc["tTot"])
+Q = int(oneRow.loc["Q"])
+print("j1H="+str(j1H)+", j2H="+str(j2H)+", g0="+str(g0) \
+      +", omega_m="+str(omega_m)+", omega_p="+str(omega_p) \
+      +", omega_c="+str(omega_c)+", er="+str(er)+", thetaCoef="+str(thetaCoef)+f", N1={N1}, N2={N2}, tTot={tTot}, Q={Q}")
+# derived quantities
+# 1. Delta_m
+Delta_m = omega_m - omega_p
+
+#2. r
+r=mp.log(er)
+#3. e^{2r}
+e2r=er**2
+# #4. dt
+dt=tTot/mp.mpf(Q)
+tau=dt
+#5.
+lmd=(e2r-1.0/e2r)/(e2r+1.0/e2r)*Delta_m
+
+#6. D
+D=(lmd*mp.sin(theta))**2+omega_p**2
+#7. mu
+mu=lmd*mp.cos(theta)+Delta_m
+#8. beta
+beta=Delta_m-lmd*mp.cos(theta)
+#9. Omega
+Omega=mp.sqrt(beta*mu)
+print("\n" + "="*80)
+print(f"{'DERIVED QUANTITY':<12}")
+print("-" * 80)
+##Derived Quantities
+print(f"{'theta':<12} | {theta}")
+print(f"{'Delta_m':<12} | {Delta_m}")
+print(f"{'r':<12} | {r}")
+print(f"{'lmd':<12} | {lmd}")
+print(f"{'mu':<12} | {mu}")
+print(f"{'beta':<12} | {beta}")
+print(f"{'Omega':<12} | {Omega}")
+print(f"{'D':<12} | {D}")
+print("="*80 + "\n")
+half=mp.mpf(0.5)
+one_over_2=mp.mpf('1/2')
+one_over_4=mp.mpf('1/4')
+one_over_8=mp.mpf('1/8')
 params = {
     'omega_c': omega_c,
     'omega_m': omega_m,
@@ -332,14 +416,10 @@ params = {
     'D': D
 }
 
-
-# Time parameter
-tau = mp.mpf('0.1')  # Very small time
-
-j=0
-k=1
-n1=0
-n2=1
+j=2
+k=2
+n1=2
+n2=2
 x1_max=10
 y2_max=25
 max_deg=25
@@ -351,7 +431,10 @@ x1=0.1
 rst1=compute_double_integral_numerical(j,k,n1,n2,tau,params,x1_max,y2_max,max_deg)
 rst2=integral_using_feldheim(j,k,n1,n2,tau,params,x1_max,y2_max,max_deg)
 rst3=Z_tilde_func(j,k,n1,n2,tau,params)
-print(f"rst1={rst1}, rst2={rst2}, rst3={rst3}")
+print(f"rst1={rst1}, rst2={rst2}")
+print(f"rst3={rst3}")
+
+
 
 # t_start=datetime.now()
 # rst3=Z_tilde_func(j,k,n1,n2,tau,params)
