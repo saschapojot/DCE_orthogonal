@@ -4,6 +4,8 @@ from pathlib import Path
 import sys
 from multiprocessing import Pool
 import itertools
+from tqdm import tqdm
+
 from datetime import datetime
 #this script computes integral table using mpmath
 
@@ -285,13 +287,16 @@ param_generator = (
     for n1 in range(0, N1)
     for n2 in range(0, N2)
 )
+# Calculate total iterations for tqdm
+total_iterations = N1 * N2 * N1 * N2
 results_list = []
-with Pool() as pool:
+paralel_num=24
+with Pool(processes=paralel_num) as pool:
     # Use imap for memory efficiency
     # chunksize is crucial for speed if N1/N2 are large
     iterator = pool.imap(Z_tilde_summation_packed_params, param_generator, chunksize=1000)
     # Collect results
-    for row in iterator:
+    for row in tqdm(iterator, total=total_iterations, desc="Computing Table"):
         results_list.append(row)
 
 # 2. Create the Table
