@@ -113,9 +113,9 @@ def compute_double_integral_numerical(j,k,n1,n2, tau, params, x1_max, y2_max, ma
 
 
 
-    result = mp.quad(lambda x1:mp.quad(lambda y2: full_integrand(x1,y2,j,k,n1,n2, tau,params),[-y2_max,y2_max],maxdegree=maxdegree),
+    result = mp.quad(lambda x1:mp.quad(lambda y2: full_integrand(x1,y2,j,k,n1,n2, tau,params),[-y2_max,y2_max],maxdegree=maxdegree,points=[0]),
                      [-x1_max, x1_max],
-                     maxdegree=maxdegree)
+                     maxdegree=maxdegree,points=[0] )
     return result
 
 def I_kn2_at_x1_func(k, n2, x1, tau, params, x1_max, y2_max, maxdegree=25):
@@ -186,7 +186,7 @@ def integral_using_feldheim(j,k,n1,n2,tau,params,x1_max, y2_max, maxdegree=25):
         psi_c_n1 = psi_c(n1, x1, params['omega_c'])
         return psi_c_j * psi_c_n1 * I_kn2
 
-    result = mp.quad(integrand_x1, [-x1_max, x1_max], maxdegree=maxdegree)
+    result = mp.quad(integrand_x1, [-x1_max, x1_max], maxdegree=maxdegree,points=[0])
     return result
 
 
@@ -305,9 +305,9 @@ def Z_tilde_func(j,k,n1,n2,tau,params):
 
 
 # Physical parameters
-omega_c = mp.mpf('1.5')
-omega_m = mp.mpf('1.1')
-omega_p = mp.mpf('0.8')
+omega_c = mp.mpf('2000')
+omega_m = mp.mpf('1')
+omega_p = mp.mpf('0.5')
 Delta_m = omega_m - omega_p
 theta = mp.mpf('0.1')  # radians
 g0 = mp.mpf('0.2')  # Small coupling
@@ -334,21 +334,29 @@ params = {
 
 
 # Time parameter
-tau = mp.mpf('0.1')  # Very small time
+tau = mp.mpf('0.00001')  # Very small time
 
-j=2
-k=1
-n1=2
-n2=1
+j=4
+k=4
+n1=4
+n2=4
 x1_max=7
 y2_max=15
 max_deg=25
 x1=0.1
 
-
+max_deg=100
 # val=I_kn2_at_x1_func(k, n2, x1, tau, params, x1_max, y2_max, maxdegree=25)
 # print(val)
-rst1=compute_double_integral_numerical(j,k,n1,n2,tau,params,x1_max,y2_max,max_deg)
-rst2=integral_using_feldheim(j,k,n1,n2,tau,params,x1_max,y2_max,max_deg)
+# rst1=compute_double_integral_numerical(j,k,n1,n2,tau,params,x1_max,y2_max,max_deg)
+# rst2=integral_using_feldheim(j,k,n1,n2,tau,params,x1_max,y2_max,max_deg)
 rst3=Z_tilde_func(j,k,n1,n2,tau,params)
-print(f"rst1={rst1}, rst2={rst2}, rst3={rst3}")
+# print(f"rst1={rst1}, rst2={rst2}, rst3={rst3}")
+print(f"rst3={rst3}")
+
+alpha=alpha_func(tau, params)
+delta=delta_func(tau,params)
+print(f"Omega={Omega}")
+print(f"delta={delta}")
+z=-np.sqrt((1+alpha**2)/Omega)*(1/2*Omega*delta**2/(1+alpha**2)-1)*1/np.abs(delta)
+print(f"z={z}")
