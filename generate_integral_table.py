@@ -4,7 +4,7 @@ from pathlib import Path
 import sys
 from multiprocessing import Pool
 import itertools
-from tqdm import tqdm
+
 
 from datetime import datetime
 #this script computes integral table using mpmath
@@ -291,13 +291,19 @@ param_generator = (
 total_iterations = N1 * N2 * N1 * N2
 results_list = []
 paralel_num=24
+update_interval = max(100, int(total_iterations * 0.05))
+
 with Pool(processes=paralel_num) as pool:
     # Use imap for memory efficiency
     # chunksize is crucial for speed if N1/N2 are large
     iterator = pool.imap(Z_tilde_summation_packed_params, param_generator, chunksize=1000)
-    # Collect results
-    for row in tqdm(iterator, total=total_iterations, desc="Computing Table"):
+    for i, row in enumerate(iterator):
         results_list.append(row)
+        # Print status update periodically
+        if (i + 1) % update_interval == 0:
+            percent_done = ((i + 1) / total_iterations) * 100
+            print(f"Progress: {i + 1}/{total_iterations} ({percent_done:.2f}%)", flush=True)
+
 
 # 2. Create the Table
 df = pd.DataFrame(results_list, columns=['j', 'k', 'n1', 'n2', 'Z_tilde'])
