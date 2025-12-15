@@ -18,6 +18,8 @@
 #include <cstdio>
 #include <cstring>
 #include <fstream>
+#include <gsl/gsl_errno.h>     // <--- ADDED: Required for error handling
+#include <gsl/gsl_sf_gamma.h>
 #include <gsl/gsl_sf_hyperg.h> // GNU Scientific Library
 
 #include <iomanip>
@@ -45,6 +47,8 @@ class table
 public:
     table(const std::string &cppInParamsFileName)
     {
+        // <--- ADDED: Turn off GSL default error handler to prevent crash on underflow
+        gsl_set_error_handler_off();
         std::ifstream file(cppInParamsFileName);
         if (!file.is_open()) {
             std::cerr << "Failed to open the file." << std::endl;

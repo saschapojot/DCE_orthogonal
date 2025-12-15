@@ -126,3 +126,18 @@ target_link_libraries(run_integral_table Boost::numpy)
 #python
 target_link_libraries(run_integral_table ${Python3_LIBRARIES})
 target_link_libraries(run_integral_table  Boost::boost)
+
+
+
+# --- Modern GSL Configuration ---
+# Set the hint for where GSL is installed
+set(GSL_ROOT_DIR "/home/adada/cppLocal/gsl")
+# Find the package using CMake's built-in FindGSL module
+find_package(GSL REQUIRED)
+
+if(GSL_FOUND)
+    message(STATUS "GSL found at: ${GSL_INCLUDE_DIRS}")
+    # Link against the imported target GSL::gsl
+    # This automatically handles include directories and linking libgsl + libgslcblas
+    target_link_libraries(run_integral_table  GSL::gsl GSL::gslcblas)
+endif()
