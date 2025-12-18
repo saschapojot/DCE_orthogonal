@@ -4,6 +4,7 @@
 
 #ifndef INTEGRAL_TABLE_HPP
 #define INTEGRAL_TABLE_HPP
+#include <arb.h>
 #include <boost/filesystem.hpp>
 // #include <boost/math/constants/constants.hpp>
 // #include <boost/math/special_functions/gamma.hpp>
@@ -17,38 +18,57 @@
 #include <complex>
 #include <cstdio>
 #include <cstring>
+#include <arb.h>
+#include <flint.h>
 #include <fstream>
-#include <gsl/gsl_errno.h>     // <--- ADDED: Required for error handling
-#include <gsl/gsl_sf_gamma.h>
-#include <gsl/gsl_sf_hyperg.h> // GNU Scientific Library
 
 #include <iomanip>
 #include <iostream>
 #include <regex>
 #include <string>
 #include <vector>
-// const auto PI = boost::math::constants::pi<boost::multiprecision::cpp_dec_float_50>();
-// using Complex50 = boost::multiprecision::cpp_complex_50;
-// const auto I = Complex50(0, 1);
-// Define the high-precision floating point type alias for easier usage
-// using double = boost::multiprecision::cpp_dec_float_50;
-// using boost::multiprecision::pow;
-// using boost::multiprecision::sin;
-// using boost::multiprecision::exp;
-// using boost::multiprecision::log;
-// using boost::multiprecision::cos;
-const auto PI=M_PI;
-using namespace std::complex_literals; // Brings in the i literal
+
+
 namespace fs = boost::filesystem;
 namespace bp = boost::python;
 namespace np = boost::python::numpy;
+
+
+
+
+
 class table
 {
 public:
+    // Disable copy constructor and assignment to avoid double-free issues with arb_t
+    table(const table&) = delete;
+    table& operator=(const table&) = delete;
+
     table(const std::string &cppInParamsFileName)
     {
-        // <--- ADDED: Turn off GSL default error handler to prevent crash on underflow
-        gsl_set_error_handler_off();
+        // Initialize all arb_t variables
+        arb_init(pi);
+        arb_init(g0);
+        arb_init(omegam);
+        arb_init(omegap);
+        arb_init(omegac);
+        arb_init(er);
+        arb_init(thetaCoef);
+        arb_init(theta);
+        arb_init(lmd);
+        arb_init(Deltam);
+        arb_init(r);
+        arb_init(e2r);
+        arb_init(tTot);
+        arb_init(dt);
+        arb_init(D);
+        arb_init(mu);
+        arb_init(beta);
+        arb_init(Omega);
+
+        // Initialize pi constant
+        arb_const_pi(pi, prec);
+
         std::ifstream file(cppInParamsFileName);
         if (!file.is_open()) {
             std::cerr << "Failed to open the file." << std::endl;
@@ -56,6 +76,7 @@ public:
         }
         std::string line;
         int paramCounter = 0;
+        std::string tempStr; // Buffer for reading numbers
         while (std::getline(file, line))
         {
             // Check if the line is empty
@@ -93,7 +114,8 @@ public:
             //read g0
             if (paramCounter == 2)
             {
-                iss>>g0;
+                iss >> tempStr;
+                arb_set_str(g0, tempStr.c_str(), prec);
                 paramCounter++;
                 continue;
             }//end reading g0
@@ -101,7 +123,7 @@ public:
             //read omegam
             if(paramCounter == 3)
             {
-                iss>>omegam;
+                iss >> tempStr; arb_set_str(omegam, tempStr.c_str(), prec);
                 paramCounter++;
                 continue;
             }//end reading omegam
@@ -109,7 +131,8 @@ public:
             //read omegap
             if(paramCounter == 4)
             {
-                iss>>omegap;
+                iss >> tempStr;
+                arb_set_str(omegap, tempStr.c_str(), prec);
                 paramCounter++;
                 continue;
             }
@@ -117,7 +140,8 @@ public:
             //read omegac
             if(paramCounter == 5)
             {
-                iss>>omegac;
+                iss >> tempStr;
+                arb_set_str(omegac, tempStr.c_str(), prec);
                 paramCounter++;
                 continue;
             }//end reading omegac
@@ -125,12 +149,9 @@ public:
             //read er
             if(paramCounter == 6)
             {
-                iss>>er;
-                if(er<=0)
-                {
-                    std::cerr << "er must be >0" << std::endl;
-                    std::exit(1);
-                }
+                iss >> tempStr;
+                arb_set_str(er, tempStr.c_str(), prec);
+                if(!arb_is_positive(er)) { std::cerr << "er must be >0" << std::endl; std::exit(1); }
                 paramCounter++;
                 continue;
             }//end reading er
@@ -138,7 +159,8 @@ public:
             //read thetaCoef
             if(paramCounter == 7)
             {
-                iss>>thetaCoef;
+                iss >> tempStr;
+                arb_set_str(thetaCoef, tempStr.c_str(), prec);
                 paramCounter++;
                 continue;
             }//end reading thetaCoef
@@ -188,12 +210,9 @@ public:
             //read tTot
             if (paramCounter==12)
             {
-                iss>>tTot;
-                if (tTot<=0)
-                {
-                    std::cerr << "tTot must be >0" << std::endl;
-                    std::exit(1);
-                }
+                iss >> tempStr;
+                arb_set_str(tTot, tempStr.c_str(), prec);
+                if(!arb_is_positive(tTot)) { std::cerr << "tTot must be >0" << std::endl; std::exit(1); }
                 paramCounter++;
                 continue;
             }//end tTot
@@ -212,91 +231,162 @@ public:
             }//end Q
 
         }//end while
-
         //print parameters
         std::cout << std::setprecision(15);
-        std::cout<<"j1H="<<j1H<<", j2H="<<j2H<<", g0="<<g0
-        <<", omegam="<<omegam<<", omegap="<<omegap<<", omegac="<<omegac
-        <<", er="<<er<<", thetaCoef="<<thetaCoef<<", groupNum="
-        <<groupNum<<", rowNum="<<rowNum<<", N1="<<N1<<", N2="<<N2<<", tTot="<<tTot<<", Q="<<Q<<std::endl;
+        std::cout << "j1H=" << j1H << ", j2H=" << j2H << ", ";
+        print_arb("g0", g0); std::cout << ", ";
+        print_arb("omegam", omegam); std::cout << ", ";
+        print_arb("omegap", omegap); std::cout << ", ";
+        print_arb("omegac", omegac); std::cout << ", ";
+        print_arb("er", er); std::cout << ", ";
+        print_arb("thetaCoef", thetaCoef); std::cout << ", ";
+        std::cout << "groupNum=" << groupNum << ", rowNum=" << rowNum
+                  << ", N1=" << N1 << ", N2=" << N2 << ", ";
+        print_arb("tTot", tTot); std::cout << ", Q=" << Q << std::endl;
 
- //compute derived quantities
 
+        // --- Compute derived quantities ---
+        // Temporary variables for calculation
+        arb_t tmp1, tmp2, tmp3, tmp_sin, tmp_cos;
+        arb_init(tmp1); arb_init(tmp2);
+        arb_init(tmp3); arb_init(tmp_sin); arb_init(tmp_cos);
 
-        // 1. Calculate theta using the high-precision PI constant
-        this->theta = this->thetaCoef * PI;
-        // 2. Calculate r (squeezing parameter) using Boost Multiprecision log
-        this->r = log(this->er);
-        // 3. Calculate e^2r. Since er = e^r, then e^2r = (er)^2.
-        this->e2r = this->er * this->er;
-        // 4. Calculate time step dt
-        this->dt = this->tTot / double(this->Q);
-        //5. Deltam=omegam-omegap
-        this->Deltam=omegam-omegap;
-        //6. lambda
-        this->lmd=(e2r-1.0/e2r)/(e2r+1.0/e2r)*Deltam;
-        //7. D
-        D=pow(lmd*sin(theta),2.0)+pow(omegap,2.0);
-        //8. mu
-        mu=lmd*cos(theta)+Deltam;
-        //9. beta
-        beta=Deltam-lmd*cos(theta);
-        //10. Omega
-        Omega=sqrt(beta*mu);
+        // 1. Calculate theta = thetaCoef * PI
+        arb_mul(this->theta, this->thetaCoef, this->pi, prec);
 
-        // Print derived quantities
+        // 2. Calculate r = log(er)
+        arb_log(this->r, this->er, prec);
+
+        // 3. Calculate e^2r = er * er
+        arb_mul(this->e2r, this->er, this->er, prec);
+
+        // 4. Calculate time step dt = tTot / Q
+        arb_set_si(tmp1, this->Q); // Convert int Q to arb
+        arb_div(this->dt, this->tTot, tmp1, prec);
+
+        // 5. Deltam = omegam - omegap
+        arb_sub(this->Deltam, this->omegam, this->omegap, prec);
+
+        // 6. lmd = (e2r - 1/e2r)/(e2r + 1/e2r) * Deltam
+        // tmp1 = 1/e2r
+        arb_inv(tmp1, this->e2r, prec);
+        // tmp2 = e2r - 1/e2r
+        arb_sub(tmp2, this->e2r, tmp1, prec);
+        // tmp3 = e2r + 1/e2r
+        arb_add(tmp3, this->e2r, tmp1, prec);
+        // lmd = tmp2 / tmp3
+        arb_div(this->lmd, tmp2, tmp3, prec);
+        // lmd = lmd * Deltam
+        arb_mul(this->lmd, this->lmd, this->Deltam, prec);
+
+        // Pre-calculate sin(theta) and cos(theta)
+        arb_sin_cos(tmp_sin, tmp_cos, this->theta, prec);
+
+        // 7. D = (lmd * sin(theta))^2 + omegap^2
+        arb_mul(tmp1, this->lmd, tmp_sin, prec); // tmp1 = lmd * sin
+        arb_mul(tmp1, tmp1, tmp1, prec);         // tmp1 = (lmd * sin)^2
+        arb_mul(tmp2, this->omegap, this->omegap, prec); // tmp2 = omegap^2
+        arb_add(this->D, tmp1, tmp2, prec);
+
+        // 8. mu = lmd * cos(theta) + Deltam
+        arb_mul(tmp1, this->lmd, tmp_cos, prec);
+        arb_add(this->mu, tmp1, this->Deltam, prec);
+
+        // 9. beta = Deltam - lmd * cos(theta)
+        // Note: tmp1 still holds lmd * cos(theta)
+        arb_sub(this->beta, this->Deltam, tmp1, prec);
+
+        // 10. Omega = sqrt(beta * mu)
+        arb_mul(tmp1, this->beta, this->mu, prec);
+        arb_sqrt(this->Omega, tmp1, prec);
+
+        // Clear temporary variables
+        arb_clear(tmp1); arb_clear(tmp2);
+        arb_clear(tmp3); arb_clear(tmp_sin); arb_clear(tmp_cos);
+
         std::cout << "\n--- Derived Quantities ---" << std::endl;
-        std::cout << "theta   = " << theta << std::endl;
-        std::cout << "r       = " << r << std::endl;
-        std::cout << "e2r     = " << e2r << std::endl;
-        std::cout << "dt      = " << dt << std::endl;
-        std::cout << "Deltam  = " << Deltam << std::endl;
-        std::cout << "lmd     = " << lmd << std::endl;
-        std::cout << "D       = " << D << std::endl;
-        std::cout << "mu      = " << mu << std::endl;
-        std::cout << "beta    = " << beta << std::endl;
-        std::cout << "Omega   = " << Omega << std::endl;
+        print_arb("theta", theta);
+        print_arb("r", r);
+        print_arb("e2r", e2r);
+        print_arb("dt", dt);
+        print_arb("Deltam", Deltam);
+        print_arb("lmd", lmd);
+        print_arb("D", D);
+        print_arb("mu", mu);
+        print_arb("beta", beta);
+        print_arb("Omega", Omega);
         std::cout << "--------------------------" << std::endl;
 
 
-    }//end constructor
-public:
-    ///
-    /// @param a
-    /// @param z
-    /// @return Parabolic Cylinder Function U(a,z)
-    double pcf_U(const double& a, const double& z);
 
-    ///
-    /// @param nu
-    /// @param x
-    /// @return Function to calculate D_nu(x) using GSL's Hypergeometric U
-    double pcf_D(const double& nu, const double&  x);
+
+
+
+    }//end constructor
+
+    // Destructor to clear arb_t memory
+    ~table()
+    {
+        arb_clear(pi);
+        arb_clear(g0);
+        arb_clear(omegam);
+        arb_clear(omegap);
+        arb_clear(omegac);
+        arb_clear(er);
+        arb_clear(thetaCoef);
+        arb_clear(theta);
+        arb_clear(lmd);
+        arb_clear(Deltam);
+        arb_clear(r);
+        arb_clear(e2r);
+        arb_clear(tTot);
+        arb_clear(dt);
+        arb_clear(D);
+        arb_clear(mu);
+        arb_clear(beta);
+        arb_clear(Omega);
+
+    }
+
 public:
+
+    // Helper function to print arb_t
+    static void print_arb(const char* name, arb_t& val) {
+        char* s = arb_get_str(val, 15, 0); // 15 digits for display
+        std::cout << name << "=" << s<<"\n";
+
+        flint_free(s);
+    }
+
+
+public:
+    const slong prec = 110;
+
     int j1H;
     int j2H;
-     double g0;
-    double omegam;
-    double omegap;
-    double omegac ;
-    double er ;
-    double thetaCoef ;
-    int groupNum ;
-    int rowNum ;
-    double theta;
-    double lmd;
-    double Deltam;
-    double r;
-    double e2r;
+    arb_t pi;
+    arb_t g0;
+    arb_t omegam;
+    arb_t omegap;
+    arb_t omegac;
+    arb_t er;
+    arb_t thetaCoef;
+    int groupNum;
+    int rowNum;
+    arb_t theta;
+    arb_t lmd;
+    arb_t Deltam;
+    arb_t r;
+    arb_t e2r;
     int N1;
     int N2;
-    double tTot;
-    double dt;
+    arb_t tTot;
+    arb_t dt;
     int Q;
-    double D;
-    double mu;
-    double beta;
-    double Omega;
+    arb_t D;
+    arb_t mu;
+    arb_t beta;
+    arb_t Omega;
 };
 
 
