@@ -115,9 +115,9 @@ def compute_double_integral_numerical(j,k,n1,n2, tau, params, x1_max, y2_max, ma
 
 
 
-    result = mp.quad(lambda x1:mp.quad(lambda y2: full_integrand(x1,y2,j,k,n1,n2, tau,params),[-y2_max,y2_max],maxdegree=maxdegree),
+    result = mp.quad(lambda x1:mp.quad(lambda y2: full_integrand(x1,y2,j,k,n1,n2, tau,params),[-y2_max,y2_max],maxdegree=maxdegree,points=[0]),
                      [-x1_max, x1_max],
-                     maxdegree=maxdegree)
+                     maxdegree=maxdegree,points=[0] )
     return result
 
 def I_kn2_at_x1_func(k, n2, x1, tau, params, x1_max, y2_max, maxdegree=25):
@@ -188,7 +188,7 @@ def integral_using_feldheim(j,k,n1,n2,tau,params,x1_max, y2_max, maxdegree=25):
         psi_c_n1 = psi_c(n1, x1, params['omega_c'])
         return psi_c_j * psi_c_n1 * I_kn2
 
-    result = mp.quad(integrand_x1, [-x1_max, x1_max], maxdegree=maxdegree)
+    result = mp.quad(integrand_x1, [-x1_max, x1_max], maxdegree=maxdegree,points=[0])
     return result
 
 
@@ -307,6 +307,7 @@ def Z_tilde_func(j,k,n1,n2,tau,params):
 
 
 # Physical parameters
+
 # omega_c = mp.mpf('1.5')
 # omega_m = mp.mpf('1.1')
 # omega_p = mp.mpf('0.8')
@@ -315,6 +316,7 @@ def Z_tilde_func(j,k,n1,n2,tau,params):
 # g0 = mp.mpf('0.2')  # Small coupling
 # # Derived parameters
 # lmd=mp.mpf(0.9)*Delta_m
+
 
 # mu = lmd * mp.cos(theta) + Delta_m
 # beta = Delta_m - lmd * mp.cos(theta)
@@ -416,23 +418,28 @@ params = {
     'D': D
 }
 
-j=2
-k=2
-n1=2
-n2=2
-x1_max=10
-y2_max=25
+
+
+# Time parameter
+tau = mp.mpf('0.00001')  # Very small time
+
+j=4
+k=4
+n1=4
+n2=4
+x1_max=7
+y2_max=15
+
 max_deg=25
 x1=0.1
 
-
+max_deg=100
 # val=I_kn2_at_x1_func(k, n2, x1, tau, params, x1_max, y2_max, maxdegree=25)
 # print(val)
-rst1=compute_double_integral_numerical(j,k,n1,n2,tau,params,x1_max,y2_max,max_deg)
-rst2=integral_using_feldheim(j,k,n1,n2,tau,params,x1_max,y2_max,max_deg)
-rst3=Z_tilde_func(j,k,n1,n2,tau,params)
-print(f"rst1={rst1}, rst2={rst2}")
-print(f"rst3={rst3}")
+# rst1=compute_double_integral_numerical(j,k,n1,n2,tau,params,x1_max,y2_max,max_deg)
+# rst2=integral_using_feldheim(j,k,n1,n2,tau,params,x1_max,y2_max,max_deg)
+# rst3=Z_tilde_func(j,k,n1,n2,tau,params)
+
 
 
 
@@ -441,3 +448,4 @@ print(f"rst3={rst3}")
 # print(f"rst3={rst3}")
 # t_end=datetime.now()
 # print(f"time: {t_end-t_start}")
+
