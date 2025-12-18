@@ -10,27 +10,24 @@ int main(int argc, char *argv[])
     }
     auto table_obj=table(std::string(argv[1]));
 
+    arb_t a_param, z_param,rst;
+    arb_init(a_param);
+    arb_init(z_param);
+    arb_init(rst);
+
+    arb_set_d(a_param,2);
+    arb_set_d(z_param,1);
+    table_obj.pcfu(rst,a_param,z_param);
+
+    table_obj.print_arb("rst",rst);
+
+    arb_clear(a_param);
+    arb_clear(z_param);
+    arb_clear(rst);
 
 
-    arb_t x;
 
-    // 2. Initialize memory (Essential!)
-    arb_init(x);
 
-    // 3. Set a value (e.g., set x to Pi with 64 bits of precision)
-    slong precision = 64;
-    arb_const_pi(x, precision);
-    // 4. Print the value
-    // arb_get_str(variable, digits_to_print, flags)
-    // It returns a C-string (char*) that must be freed later.
-    char* str = arb_get_str(x, 15, 0);
-    std::cout << "Value of x: " << str << std::endl;
-
-    // 5. Free the string memory
-    flint_free(str);
-
-    // 6. Clear the arb variable memory (Essential!)
-    arb_clear(x);
 
 
 
