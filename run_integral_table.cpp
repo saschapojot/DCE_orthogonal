@@ -12,8 +12,8 @@ int main(int argc, char *argv[])
 
 
 
-    double a = 2.0;
-    double x = 3.0;
+    double a = 200.0;
+    double x = 300.0;
 
     double rst=table_obj.pcf_U(a,x);
     std::cout<<rst<<std::endl;

@@ -105,6 +105,15 @@ target_link_libraries(run_evolution ${LIBS_SO})
 
 #target_link_libraries(example ${LIBS_A})
 ########################end run_evolution part
+
+set(GSL_ROOT_DIR "/home/adada/cppLocal/gsl")
+find_package(GSL REQUIRED)
+if(GSL_FOUND)
+    message(STATUS "GSL found at: ${GSL_INCLUDE_DIRS}")
+    message(STATUS "GSL libraries: ${GSL_LIBRARIES}")
+else()
+    message(FATAL_ERROR "GSL not found!")
+endif()
 add_executable(run_integral_table run_integral_table.cpp compute_integral_table/integral_table.cpp compute_integral_table/integral_table.hpp)
 
 target_compile_options(run_integral_table PRIVATE
@@ -126,3 +135,7 @@ target_link_libraries(run_integral_table Boost::numpy)
 #python
 target_link_libraries(run_integral_table ${Python3_LIBRARIES})
 target_link_libraries(run_integral_table  Boost::boost)
+
+#gsl
+target_link_libraries(run_integral_table  GSL::gsl)
+
