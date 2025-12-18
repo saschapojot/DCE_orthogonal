@@ -127,17 +127,84 @@ target_link_libraries(run_integral_table Boost::numpy)
 target_link_libraries(run_integral_table ${Python3_LIBRARIES})
 target_link_libraries(run_integral_table  Boost::boost)
 
+###gmp, mprf, flint
+set(GMP_ROOT   "/home/adada/cppLocal/GMP")
+set(MPFR_ROOT  "/home/adada/cppLocal/MPFR")
+set(FLINT_ROOT "/home/adada/cppLocal/FLINT")
 
+# -----------------------------------------------------------------------------
+# Find GMP
+# -----------------------------------------------------------------------------
+find_path(GMP_INCLUDE_DIR gmp.h
+        HINTS ${GMP_ROOT}/include
+        NO_DEFAULT_PATH
+)
 
-# --- Modern GSL Configuration ---
-# Set the hint for where GSL is installed
-set(GSL_ROOT_DIR "/home/adada/cppLocal/gsl")
-# Find the package using CMake's built-in FindGSL module
-find_package(GSL REQUIRED)
+find_library(GMP_LIBRARY gmp
+        HINTS ${GMP_ROOT}/lib
+        NO_DEFAULT_PATH
+)
 
-if(GSL_FOUND)
-    message(STATUS "GSL found at: ${GSL_INCLUDE_DIRS}")
-    # Link against the imported target GSL::gsl
-    # This automatically handles include directories and linking libgsl + libgslcblas
-    target_link_libraries(run_integral_table  GSL::gsl GSL::gslcblas)
+if (GMP_INCLUDE_DIR AND GMP_LIBRARY)
+    message(STATUS "Found GMP include: ${GMP_INCLUDE_DIR}")
+    message(STATUS "Found GMP lib: ${GMP_LIBRARY}")
+else()
+    message(FATAL_ERROR "Could not find GMP in ${GMP_ROOT}")
 endif()
+
+# -----------------------------------------------------------------------------
+# Find MPFR
+# -----------------------------------------------------------------------------
+
+find_path(MPFR_INCLUDE_DIR mpfr.h
+        HINTS ${MPFR_ROOT}/include
+        NO_DEFAULT_PATH
+)
+find_library(MPFR_LIBRARY mpfr
+        HINTS ${MPFR_ROOT}/lib
+        NO_DEFAULT_PATH
+)
+
+if (MPFR_INCLUDE_DIR AND MPFR_LIBRARY)
+    message(STATUS "Found MPFR include: ${MPFR_INCLUDE_DIR}")
+    message(STATUS "Found MPFR lib: ${MPFR_LIBRARY}")
+else()
+    message(FATAL_ERROR "Could not find MPFR in ${MPFR_ROOT}")
+endif()
+
+# -----------------------------------------------------------------------------
+# Find FLINT
+# -----------------------------------------------------------------------------
+# Note: FLINT headers are often inside a 'flint' subdirectory (e.g., include/flint/flint.h)
+# or directly in include. We search for the file "flint.h".
+
+find_path(FLINT_INCLUDE_DIR flint.h
+        HINTS ${FLINT_ROOT}/include ${FLINT_ROOT}/include/flint
+        NO_DEFAULT_PATH
+)
+find_library(FLINT_LIBRARY flint
+        HINTS ${FLINT_ROOT}/lib
+        NO_DEFAULT_PATH
+)
+
+
+if (FLINT_INCLUDE_DIR AND FLINT_LIBRARY)
+    message(STATUS "Found FLINT include: ${FLINT_INCLUDE_DIR}")
+    message(STATUS "Found FLINT lib: ${FLINT_LIBRARY}")
+else()
+    message(FATAL_ERROR "Could not find FLINT in ${FLINT_ROOT}")
+endif()
+target_include_directories(
+        run_integral_table
+        PRIVATE
+        ${FLINT_INCLUDE_DIR}
+        ${MPFR_INCLUDE_DIR}
+        ${GMP_INCLUDE_DIR}
+)
+
+target_link_libraries(run_integral_table
+        ${FLINT_LIBRARY}
+        ${MPFR_LIBRARY}
+        ${GMP_LIBRARY}
+        m
+)
