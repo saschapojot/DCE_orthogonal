@@ -4,7 +4,7 @@
 
 #ifndef INTEGRAL_TABLE_HPP
 #define INTEGRAL_TABLE_HPP
-
+#include <algorithm>
 #include <arb.h>
 #include <arb_hypgeom.h>
 #include <boost/filesystem.hpp>
@@ -20,8 +20,10 @@
 
 #include <iomanip>
 #include <iostream>
+#include <mutex>
 #include <regex>
 #include <string>
+#include <thread>
 #include <vector>
 
 
@@ -376,6 +378,15 @@ public:
     }
 
 public:
+
+    ///
+    /// @brief Parallel implementation of Z_tilde summation using C++11 threads
+    /// @param result The arb_t variable to store the final summation
+    /// @param j
+    /// @param k
+    /// @param n1
+    /// @param n2
+    void Z_tilde_parallel(arb_t result, int j, int k, int n1, int n2);
     ///
     /// @param result sequential summation
     /// @param j
@@ -458,6 +469,7 @@ public:
     arb_t quarter,half,two;
 
     arb_t alpha,delta;
+    int num_threads ;
 };
 
 

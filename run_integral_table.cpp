@@ -4,34 +4,36 @@
 
 int main(int argc, char *argv[])
 {
-    if (argc != 2) {
-        std::cout << "wrong arguments" << std::endl;
+    if (argc != 3) {
+        std::cerr << "Usage: " << argv[0] << " <filename> <number>" << std::endl;
+        std::cerr << "Error: wrong arguments" << std::endl;
         std::exit(2);
     }
     auto table_obj=table(std::string(argv[1]));
 
-    int j=1;
-   int k=5;
-    int n1=3;
-    int n2=1;
+    int proc_num = std::stoi(argv[2]);
+    table_obj.num_threads=proc_num;
+    int j=5;
+    int k=2;
+    int n1=5;
+    int n2=2;
     std::cout<<"j="<<j<<", k="<<k<<", n1="<<n1<<", n2="<<n2<<std::endl;
     arb_t result;
-    arb_init(result);
-    // Start the timer
+
+    // Start timer
     auto start = std::chrono::high_resolution_clock::now();
+    table_obj.Z_tilde_parallel(result,j,k,n1,n2);
 
-    table_obj.Z_tilde_sequential(result,j,k,n1,n2);
 
-    // Stop the timer
+    // Stop timer
     auto end = std::chrono::high_resolution_clock::now();
 
-    // Calculate duration in milliseconds
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+    // Calculate duration
+    std::chrono::duration<double> elapsed = end - start;
+    table_obj.print_arb("result",result);
 
-    // Print the result
-    std::cout << "Computation time: " << duration.count() << " ms" << std::endl;
-    table_obj.print_arb("result:",result);
-    // Optional: Clear arb variable if required by your library conventions
+    // Print execution time
+    std::cout << "Execution time: " << elapsed.count() << " seconds" << std::endl;
     arb_clear(result);
 
 

@@ -362,6 +362,9 @@ void table::set_delta(const arb_t tau)
 
 
 
+
+
+
 ///
 /// @param result sequential summation
 /// @param j
@@ -422,4 +425,114 @@ void table::Z_tilde_sequential(arb_t result,int j,int k,int n1,int n2)
     arb_clear(term); // <--- YOU MUST ADD THIS LINE BEFORE FUNCTION ENDS
 
 
+}
+
+
+
+///
+/// @brief Parallel implementation of Z_tilde summation using C++11 threads
+/// @param result The arb_t variable to store the final summation
+/// @param j
+/// @param k
+/// @param n1
+/// @param n2
+void table::Z_tilde_parallel(arb_t result, int j, int k, int n1, int n2)
+{
+    arb_set_ui(result, 0);
+    // Structure to hold the indices for a single term calculation
+    struct TaskIndices {
+        int R, m1, m2, m3, m4, t;
+    };
+    std::vector<TaskIndices> all_tasks;
+    // 1. Flatten the loops: Generate all valid index combinations
+    int m1_max = j / 2;
+    int m2_max = n1 / 2;
+    int R_max = std::min(k, n2);
+
+    for (int R = 0; R <= R_max; ++R)
+    {
+        for (int m1 = 0; m1 <= m1_max; ++m1)
+        {
+            for (int m2 = 0; m2 <= m2_max; ++m2)
+            {
+                int m3_max = (k - R) / 2;
+                for (int m3 = 0; m3 <= m3_max; ++m3)
+                {
+                    int m4_max = (n2 - R) / 2;
+
+                    for (int m4 = 0; m4 <= m4_max; ++m4)
+                    {
+                        int t_max = k + n2 - 2 * R - 2 * m3 - 2 * m4;
+                        for (int t = 0; t <= t_max; ++t)
+                        {
+
+                            // Store in the requested order: R, m1, m2, m3, m4, t
+                            all_tasks.push_back({R, m1, m2, m3, m4, t});
+                        }//end t
+                    }//end m4
+                }//end m3
+            }//end m2
+        }//end m1
+
+    }//end R
+
+
+    if (all_tasks.empty())
+    {
+        return;
+    }//end if
+
+    if (num_threads == 0) num_threads = 2; // Fallback
+
+    std::vector<std::thread> threads;
+    std::mutex result_mutex;
+    // 3. Assign chunks of tasks to threads
+    size_t total_tasks = all_tasks.size();
+    size_t tasks_per_thread = (total_tasks + num_threads - 1) / num_threads;
+
+    for (unsigned int t_id = 0; t_id < num_threads; ++t_id)
+    {
+        size_t start_idx = t_id * tasks_per_thread;
+        size_t end_idx = std::min(start_idx + tasks_per_thread, total_tasks);
+        if (start_idx >= total_tasks) break;
+
+        threads.emplace_back([this, &result, &result_mutex, &all_tasks, start_idx, end_idx, j, k, n1, n2]()
+        {
+
+            // Local accumulator for this thread
+            arb_t local_sum;
+           arb_init(local_sum);
+           arb_set_ui(local_sum, 0);
+            arb_t term;
+            arb_init(term);
+            // Process assigned chunk
+            for (size_t i = start_idx; i < end_idx; ++i)
+            {
+                const auto& task = all_tasks[i];
+                // Calculate one term independently
+                // Note: summation_one_term signature is (result, j, k, n1, n2, R, m1, m2, m3, m4, t)
+                this->summation_one_term(term, j, k, n1, n2,
+                                        task.R, task.m1, task.m2, task.m3, task.m4, task.t);
+               arb_add(local_sum, local_sum, term, prec);
+            }//end for i
+
+            // Merge local sum into global result
+            {
+               std::lock_guard<std::mutex> lock(result_mutex);
+               arb_add(result, result, local_sum, prec);
+           }
+            arb_clear(local_sum);
+            arb_clear(term);
+
+        }
+        );//end thread emplace back
+
+    }//end t_id
+
+    // 4. Wait for all threads to complete
+    for (auto& th : threads) {
+        if (th.joinable()) {
+            th.join();
+        }
+    }//end for th
 }
