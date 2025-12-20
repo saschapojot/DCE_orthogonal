@@ -359,3 +359,67 @@ void table::set_delta(const arb_t tau)
 
 
 }
+
+
+
+///
+/// @param result sequential summation
+/// @param j
+/// @param k
+/// @param n1
+/// @param n2
+void table::Z_tilde_sequential(arb_t result,int j,int k,int n1,int n2)
+{
+    // Initialize result to 0
+    arb_set_ui(result, 0);
+
+    arb_t term;
+    arb_init(term);
+
+    // Determine loop limits based on non-negative factorial arguments in summation_one_term
+    // 1. m1 loop: (j - 2*m1)! >= 0 => m1 <= j/2
+    int m1_max = j / 2;
+
+    // 2. m2 loop: (n1 - 2*m2)! >= 0 => m2 <= n1/2
+    int m2_max = n1 / 2;
+
+    // 3. R loop: (k - R - ...)! >= 0 and (n2 - R - ...)! >= 0
+    //    Implies R <= k and R <= n2
+    int R_max = std::min(k, n2);
+    for (int m1 = 0; m1 <= m1_max; ++m1)
+    {
+        for (int m2 = 0; m2 <= m2_max; ++m2)
+        {
+
+            for (int R = 0; R <= R_max; ++R)
+            {
+
+                // 4. m3 loop: (k - R - 2*m3)! >= 0 => m3 <= (k - R)/2
+                int m3_max = (k - R) / 2;
+                for (int m3 = 0; m3 <= m3_max; ++m3)
+                {
+
+                    // 5. m4 loop: (n2 - R - 2*m4)! >= 0 => m4 <= (n2 - R)/2
+                    int m4_max = (n2 - R) / 2;
+                    for (int m4 = 0; m4 <= m4_max; ++m4)
+                    {
+                        // 6. t loop: (k + n2 - 2R - 2m3 - 2m4 - t)! >= 0
+                        int t_max = k + n2 - 2 * R - 2 * m3 - 2 * m4;
+                        for (int t = 0; t <= t_max; ++t)
+                        {
+                            // Calculate single term
+                            summation_one_term(term, j, k, n1, n2, R, m1, m2, m3, m4, t);
+                            // Add to total result
+                            arb_add(result, result, term, prec);
+                        }//end for t
+                    }//end for m4
+                }//end for m3
+            }//end for R
+        }//end for m2
+
+    }//end for m1
+
+    arb_clear(term); // <--- YOU MUST ADD THIS LINE BEFORE FUNCTION ENDS
+
+
+}

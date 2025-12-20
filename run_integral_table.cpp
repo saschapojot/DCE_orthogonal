@@ -10,22 +10,29 @@ int main(int argc, char *argv[])
     }
     auto table_obj=table(std::string(argv[1]));
 
-    arb_t a_param, z_param,rst;
-    arb_init(a_param);
-    arb_init(z_param);
-    arb_init(rst);
+    int j=1;
+   int k=5;
+    int n1=3;
+    int n2=1;
+    std::cout<<"j="<<j<<", k="<<k<<", n1="<<n1<<", n2="<<n2<<std::endl;
+    arb_t result;
+    arb_init(result);
+    // Start the timer
+    auto start = std::chrono::high_resolution_clock::now();
 
-    arb_set_d(a_param,2);
-    arb_set_d(z_param,1);
-    table_obj.pcfu(rst,a_param,z_param);
+    table_obj.Z_tilde_sequential(result,j,k,n1,n2);
 
-    table_obj.print_arb("rst",rst);
+    // Stop the timer
+    auto end = std::chrono::high_resolution_clock::now();
 
-    arb_clear(a_param);
-    arb_clear(z_param);
-    arb_clear(rst);
+    // Calculate duration in milliseconds
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 
-
+    // Print the result
+    std::cout << "Computation time: " << duration.count() << " ms" << std::endl;
+    table_obj.print_arb("result:",result);
+    // Optional: Clear arb variable if required by your library conventions
+    arb_clear(result);
 
 
 

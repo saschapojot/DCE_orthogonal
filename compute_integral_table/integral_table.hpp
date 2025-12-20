@@ -12,6 +12,7 @@
 #include <boost/python/numpy.hpp>
 #include <cmath>
 #include <complex>
+#include <chrono>
 #include <cstdio>
 #include <cstring>
 #include <flint.h>
@@ -71,8 +72,11 @@ public:
 
         // Initialize  constants
         arb_const_pi(pi, prec);
-        arb_set_d(quarter, 0.25);
-        arb_set_d(half, 0.5);
+        arb_set_ui(quarter, 1);
+        arb_mul_2exp_si(quarter, quarter, -2); // 1 * 2^-2 = 0.25
+
+        arb_set_ui(half,1);
+        arb_mul_2exp_si(half, half, -1);
         arb_set_ui(two, 2);
 
 
@@ -373,6 +377,14 @@ public:
 
 public:
     ///
+    /// @param result sequential summation
+    /// @param j
+    /// @param k
+    /// @param n1
+    /// @param n2
+    void Z_tilde_sequential(arb_t result,int j,int k,int n1,int n2);
+
+    ///
     /// @param result one term in summation of Z_tilde
     /// @param j
     /// @param k
@@ -407,7 +419,7 @@ public:
     void pcfu(arb_t result, const arb_t a, const arb_t z);
     // Helper function to print arb_t
     static void print_arb(const char* name, arb_t& val) {
-        char* s = arb_get_str(val, 15, 0); // 15 digits for display
+        char* s = arb_get_str(val, 30, 0); // 15 digits for display
         std::cout << name << "=" << s<<"\n";
 
         flint_free(s);
@@ -415,7 +427,7 @@ public:
 
 
 public:
-    const slong prec = 110;
+    const slong prec = 500;
 
     int j1H;
     int j2H;
