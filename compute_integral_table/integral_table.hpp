@@ -379,6 +379,8 @@ public:
 
 public:
 
+    void generate_table();
+
     ///
     /// @brief Parallel implementation of Z_tilde summation using C++11 threads
     /// @param result The arb_t variable to store the final summation
@@ -428,6 +430,11 @@ public:
     /// @param a
     /// @param z
     void pcfu(arb_t result, const arb_t a, const arb_t z);
+
+    std::string to_string_val( arb_t x, slong digits);
+
+    std::string to_string_err( arb_t x, slong digits);
+
     // Helper function to print arb_t
     static void print_arb(const char* name, arb_t& val) {
         char* s = arb_get_str(val, 30, 0); // 15 digits for display
@@ -439,7 +446,7 @@ public:
 
 public:
     const slong prec = 500;
-
+    const slong out_digits=30;
     int j1H;
     int j2H;
     arb_t pi;
@@ -470,6 +477,7 @@ public:
 
     arb_t alpha,delta;
     int num_threads ;
+    std::string out_dir;
 };
 
 

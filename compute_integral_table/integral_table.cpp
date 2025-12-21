@@ -439,6 +439,11 @@ void table::Z_tilde_sequential(arb_t result,int j,int k,int n1,int n2)
 void table::Z_tilde_parallel(arb_t result, int j, int k, int n1, int n2)
 {
     arb_set_ui(result, 0);
+    // If parities of j and n1 differ, result is 0
+    if ((j % 2) != (n1 % 2))
+    {
+        return;
+    }
     // Structure to hold the indices for a single term calculation
     struct TaskIndices {
         int R, m1, m2, m3, m4, t;
@@ -535,4 +540,108 @@ void table::Z_tilde_parallel(arb_t result, int j, int k, int n1, int n2)
             th.join();
         }
     }//end for th
+}
+
+
+void table::generate_table()
+{
+    arb_t result;
+    arb_init(result); // Important: Initialize before use
+    // Construct the output filename
+    std::string filename =out_dir+"/Z_tilde_group" +
+                           std::to_string(groupNum) + "_row" + std::to_string(rowNum) + ".csv";
+    std::ofstream outfile(filename);
+    if (!outfile.is_open()) {
+        std::cerr << "Error: Could not open output file " << filename << std::endl;
+        arb_clear(result);
+        return;
+    }
+    // Write header
+    outfile << "j,k,n1,n2,value,error\n";
+    // --- Progress Tracking Setup ---
+    long long total_integrals = (long long)N1 * N2 * N1 * N2;
+    long long completed = 0;
+    auto start_time = std::chrono::high_resolution_clock::now();
+    // Determine how often to print (e.g., every 1% or every 10 iterations if total is small)
+    long long print_interval = 100;//total_integrals / 100;
+    if (print_interval == 0) {print_interval = 1;}
+    std::cout << "Starting generation of " << total_integrals << " integrals..." << std::endl;
+
+    for ( int j=0;j<N1;j++)
+    {
+        for (int k=0;k<N2;k++)
+        {
+        for (int n1=0;n1<N1;n1++)
+        {
+            for (int n2=0;n2<N2;n2++)
+            {
+                // Compute the integral
+                this->Z_tilde_parallel(result,j,k,n1,n2);
+                std::string val_str = to_string_val(result,out_digits);
+                std::string err_str = to_string_err(result,out_digits);
+                // Write to file
+                outfile << j << ","
+                        << k << ","
+                        << n1 << ","
+                        << n2 << ","
+                        << val_str << ","
+                        << err_str << "\n";
+                // --- Update and Print Progress ---
+                completed++;
+                if (completed % print_interval == 0 || completed == total_integrals)
+                {
+                    double percentage = (double)completed / total_integrals * 100.0;
+                    // Calculate ETA
+                    auto current_time = std::chrono::high_resolution_clock::now();
+                    std::chrono::duration<double> elapsed = current_time - start_time;
+                    double avg_time_per_item = elapsed.count() / completed;
+                    double remaining_seconds = avg_time_per_item * (total_integrals - completed);
+                    std::cout << "\rProgress: " << std::fixed << std::setprecision(2) << percentage << "% "
+                                  << "(" << completed << "/" << total_integrals << ") "
+                                  << "Elapsed: " << std::setprecision(0) << elapsed.count() << "s "
+                                  << "ETA: " << std::setprecision(0) << remaining_seconds << "s" << "\n";
+                }//end if
+            }//end for n2
+        }//end for n1
+        }//end for k2
+    }//end for j
+
+
+    outfile.close();
+    arb_clear(result);
+}
+
+
+std::string table::to_string_val( arb_t x, slong digits)
+{
+    // arf_get_str allocates memory that we must free
+    char* raw_str = arf_get_str(arb_midref(x), digits);
+    std::string cpp_str(raw_str);
+    flint_free(raw_str);
+    return cpp_str;
+}
+
+std::string table::to_string_err( arb_t x, slong digits)
+{
+
+    // Initialize a temporary arbitrary-precision float
+    arf_t t;
+    arf_init(t);
+
+    // Access the radius (error bound) of x and set it to the arf variable.
+    // arb_radref returns a pointer to the mag_t component representing the radius.
+    arf_set_mag(t, arb_radref(x));
+    // Convert the arf value to a string with the specified precision.
+    // arf_get_str allocates memory that must be freed.
+    char* raw_str = arf_get_str(t, digits);
+
+
+    std::string cpp_str(raw_str);
+
+    // Clean up FLINT memory
+    flint_free(raw_str);
+    arf_clear(t);
+
+    return cpp_str;
+
 }
