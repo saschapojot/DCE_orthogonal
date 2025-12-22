@@ -548,8 +548,11 @@ void table::generate_table()
     arb_t result;
     arb_init(result); // Important: Initialize before use
     // Construct the output filename
-    std::string filename =out_dir+"/Z_tilde_group" +
-                           std::to_string(groupNum) + "_row" + std::to_string(rowNum) + ".csv";
+    std::string filename = out_dir + "/Z_tilde_group" +
+                       std::to_string(groupNum) + "_row" + std::to_string(rowNum) +
+                       "_j" + std::to_string(j_start) + "-" + std::to_string(j_end) +
+                       "_k" + std::to_string(k_start) + "-" + std::to_string(k_end) +
+                       ".csv";
     std::ofstream outfile(filename);
     if (!outfile.is_open()) {
         std::cerr << "Error: Could not open output file " << filename << std::endl;
@@ -559,7 +562,7 @@ void table::generate_table()
     // Write header
     outfile << "j,k,n1,n2,value,error\n";
     // --- Progress Tracking Setup ---
-    long long total_integrals = (long long)N1 * N2 * N1 * N2;
+    long long total_integrals = (long long)(j_end - j_start) * (k_end - k_start) * N1 * N2;
     long long completed = 0;
     auto start_time = std::chrono::high_resolution_clock::now();
     // Determine how often to print (e.g., every 1% or every 10 iterations if total is small)
@@ -567,9 +570,9 @@ void table::generate_table()
     if (print_interval == 0) {print_interval = 1;}
     std::cout << "Starting generation of " << total_integrals << " integrals..." << std::endl;
 
-    for ( int j=0;j<N1;j++)
+    for ( int j=j_start;j<j_end;j++)
     {
-        for (int k=0;k<N2;k++)
+        for (int k=k_start;k<k_end;k++)
         {
         for (int n1=0;n1<N1;n1++)
         {

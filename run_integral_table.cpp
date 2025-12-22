@@ -4,7 +4,7 @@
 
 int main(int argc, char *argv[])
 {
-    if (argc != 3) {
+    if (argc != 7) {
         std::cerr << "Usage: " << argv[0] << " <filename> <number>" << std::endl;
         std::cerr << "Error: wrong arguments" << std::endl;
         std::exit(2);
@@ -13,9 +13,19 @@ int main(int argc, char *argv[])
     fs::path full_path(argv[1]);
     table_obj.out_dir=full_path.parent_path().string();
     std::cout<<"out_dir="<<table_obj.out_dir<<std::endl;
+    int j_start=std::stoi(argv[2]);
+    int j_end=std::stoi(argv[3]);
+    int k_start=std::stoi(argv[4]);
+    int k_end=std::stoi(argv[5]);
+    int proc_num = std::stoi(argv[6]);
 
-    int proc_num = std::stoi(argv[2]);
+    table_obj.j_start=j_start;
+    table_obj.j_end=j_end;
+    table_obj.k_start=k_start;
+    table_obj.k_end=k_end;
     table_obj.num_threads=proc_num;
+
+
     table_obj.generate_table();
 
 

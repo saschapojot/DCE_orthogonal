@@ -243,6 +243,7 @@ public:
                 continue;
             }//end Q
 
+
         }//end while
         //print parameters
         std::cout << std::setprecision(15);
@@ -478,6 +479,13 @@ public:
     arb_t alpha,delta;
     int num_threads ;
     std::string out_dir;
+
+    int j_start;
+    int k_start;
+    int j_end;
+    int k_end;
+
+
 };
 
 
