@@ -5,7 +5,8 @@ from pathlib import Path
 import shutil
 #python readCSV.py groupNum rowNum
 #this script reads csv and creates directory
-#this script creates slurm bash files for gansu
+#this script creates slurm bash files for raccoon
+
 if len(sys.argv)!=3:
     print("wrong number of arguments")
 
@@ -63,8 +64,8 @@ def write_slurm_script(job_id, j_start, j_end, k_start, k_end,
                        num_threads=24,
                        time_limit="0-60:00",
                        mem="100GB",
-                       partition="lzicnormal",
-                       base_dir="/public/home/hkust_jwliu_1/liuxi/Documents/cppCode/DCE_orthogonal"):
+                       partition="CLUSTER",
+                       base_dir="/home/cywanag/data/hpc/cywanag/liuxi/Document/cppCode/DCE_orthogonal"):
     """
    Write a SLURM bash script for a single job.
 
@@ -119,7 +120,7 @@ def write_slurm_script(job_id, j_start, j_end, k_start, k_end,
 
 
 
-out_dir="./slurm_files_gansu/"
+out_dir="./slurm_files_raccoon/"
 # Remove output directory if it exists
 if os.path.exists(out_dir):
     print(f"Removing existing directory: {out_dir}")
@@ -127,8 +128,8 @@ if os.path.exists(out_dir):
 
 
 # Configure job division
-num_jobs_j = 10  # Divide j into chunks
-num_jobs_k = 10  # Divide k into chunks
+num_jobs_j = 50  # Divide j into chunks
+num_jobs_k = 50  # Divide k into chunks
 # Generate job parameters
 job_params = generate_job_params(N1, N2, num_jobs_j, num_jobs_k)
 print(f"Generating {len(job_params)} jobs...")
@@ -140,4 +141,4 @@ for job_id, j_start, j_end, k_start, k_end in job_params:
                        num_threads=24,
                        time_limit="0-60:00",
                        mem="100GB",
-                       partition="lzicnormal")
+                       partition="CLUSTER")
