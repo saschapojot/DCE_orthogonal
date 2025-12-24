@@ -4,28 +4,26 @@
 
 #ifndef INTEGRAL_TABLE_HPP
 #define INTEGRAL_TABLE_HPP
+#include <algorithm>
 #include <arb.h>
+#include <arb_hypgeom.h>
 #include <boost/filesystem.hpp>
-// #include <boost/math/constants/constants.hpp>
-// #include <boost/math/special_functions/gamma.hpp>
-//// #include <boost/math/special_functions/hermite.hpp>
-#include <boost/math/special_functions/hypergeometric_2F0.hpp>
-//#include <boost/multiprecision/cpp_complex.hpp>
-//#include <boost/multiprecision/cpp_dec_float.hpp>
 #include <boost/python.hpp>
 #include <boost/python/numpy.hpp>
 #include <cmath>
 #include <complex>
+#include <chrono>
 #include <cstdio>
 #include <cstring>
-#include <arb.h>
 #include <flint.h>
 #include <fstream>
 
 #include <iomanip>
 #include <iostream>
+#include <mutex>
 #include <regex>
 #include <string>
+#include <thread>
 #include <vector>
 
 
@@ -48,6 +46,11 @@ public:
     {
         // Initialize all arb_t variables
         arb_init(pi);
+        arb_init(half);
+        arb_init(quarter);
+        arb_init(two);
+
+
         arb_init(g0);
         arb_init(omegam);
         arb_init(omegap);
@@ -66,8 +69,18 @@ public:
         arb_init(beta);
         arb_init(Omega);
 
-        // Initialize pi constant
+        arb_init(alpha);
+        arb_init(delta);
+
+        // Initialize  constants
         arb_const_pi(pi, prec);
+        arb_set_ui(quarter, 1);
+        arb_mul_2exp_si(quarter, quarter, -2); // 1 * 2^-2 = 0.25
+
+        arb_set_ui(half,1);
+        arb_mul_2exp_si(half, half, -1);
+        arb_set_ui(two, 2);
+
 
         std::ifstream file(cppInParamsFileName);
         if (!file.is_open()) {
@@ -230,6 +243,7 @@ public:
                 continue;
             }//end Q
 
+
         }//end while
         //print parameters
         std::cout << std::setprecision(15);
@@ -300,6 +314,12 @@ public:
         arb_mul(tmp1, this->beta, this->mu, prec);
         arb_sqrt(this->Omega, tmp1, prec);
 
+        //11. alpha
+        set_alpha(dt);
+
+        //12. delta
+        set_delta(dt);
+
         // Clear temporary variables
         arb_clear(tmp1); arb_clear(tmp2);
         arb_clear(tmp3); arb_clear(tmp_sin); arb_clear(tmp_cos);
@@ -315,6 +335,8 @@ public:
         print_arb("mu", mu);
         print_arb("beta", beta);
         print_arb("Omega", Omega);
+        print_arb("alpha",alpha);
+        print_arb("delta",delta);
         std::cout << "--------------------------" << std::endl;
 
 
@@ -328,6 +350,14 @@ public:
     ~table()
     {
         arb_clear(pi);
+        arb_clear(half);
+        arb_clear(quarter);
+        arb_clear(two);
+        arb_clear(alpha);
+        arb_clear(delta);
+
+
+
         arb_clear(g0);
         arb_clear(omegam);
         arb_clear(omegap);
@@ -350,9 +380,65 @@ public:
 
 public:
 
+    void generate_table();
+
+    ///
+    /// @brief Parallel implementation of Z_tilde summation using C++11 threads
+    /// @param result The arb_t variable to store the final summation
+    /// @param j
+    /// @param k
+    /// @param n1
+    /// @param n2
+    void Z_tilde_parallel(arb_t result, int j, int k, int n1, int n2);
+    ///
+    /// @param result sequential summation
+    /// @param j
+    /// @param k
+    /// @param n1
+    /// @param n2
+    void Z_tilde_sequential(arb_t result,int j,int k,int n1,int n2);
+
+    ///
+    /// @param result one term in summation of Z_tilde
+    /// @param j
+    /// @param k
+    /// @param n1
+    /// @param n2
+    /// @param R
+    /// @param m1
+    /// @param m2
+    /// @param m3
+    /// @param m4
+    /// @param t
+    void summation_one_term(arb_t result,int j,int k,int n1,int n2,int R, int m1, int m2, int m3, int m4,int t);
+
+    ///
+    /// @brief Set alpha = e^(lambda*sin(theta)*tau)
+    /// @param tau time parameter
+    void set_alpha(const arb_t tau);
+
+    ///
+    /// @brief Set delta using current alpha value
+    /// @param tau time parameter
+    void set_delta(const arb_t tau);
+
+    ///
+    /// @brief Set both alpha and delta for a given tau
+    /// @param tau time parameter
+    void set_alpha_delta(const arb_t tau);
+    ///
+    /// @param result pcfu
+    /// @param a
+    /// @param z
+    void pcfu(arb_t result, const arb_t a, const arb_t z);
+
+    std::string to_string_val( arb_t x, slong digits);
+
+    std::string to_string_err( arb_t x, slong digits);
+
     // Helper function to print arb_t
     static void print_arb(const char* name, arb_t& val) {
-        char* s = arb_get_str(val, 15, 0); // 15 digits for display
+        char* s = arb_get_str(val, 30, 0); // 15 digits for display
         std::cout << name << "=" << s<<"\n";
 
         flint_free(s);
@@ -360,8 +446,8 @@ public:
 
 
 public:
-    const slong prec = 110;
-
+    const slong prec = 500;
+    const slong out_digits=30;
     int j1H;
     int j2H;
     arb_t pi;
@@ -387,6 +473,19 @@ public:
     arb_t mu;
     arb_t beta;
     arb_t Omega;
+
+    arb_t quarter,half,two;
+
+    arb_t alpha,delta;
+    int num_threads ;
+    std::string out_dir;
+
+    int j_start;
+    int k_start;
+    int j_end;
+    int k_end;
+
+
 };
 
 
